@@ -59,7 +59,6 @@ namespace EateryWebAPI.Controllers
             string body = "Mật mã khôi phục mật khẩu của bạn là: " + _rd;
             SmtpClient smtp = new SmtpClient
             {
-
                 Host = "smtp.gmail.com",
                 Port = 587,
                 EnableSsl = true,

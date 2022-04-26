@@ -30,6 +30,8 @@ namespace EateryWebAPI.Models
 
         public string TenNH;
 
+        public bool isDelete { get; set; }
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<DONHANGCHITIET> DONHANGCHITIETs { get; set; }
 

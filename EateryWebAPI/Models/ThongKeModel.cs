@@ -7,12 +7,12 @@ namespace EateryWebAPI.Models
 {
     public class ThongKeModel
     {
-        public int MaMA;
+        public int MaMA { get; set; }
 
-        public string TenMA;
+        public string TenMA { get; set; }
 
-        public string HinnhAnhMA;
+        public string HinhAnh { get; set; }
 
-        public double TongDoanhThu;
+        public double TongDoanhThu { get; set; }
     }
 }

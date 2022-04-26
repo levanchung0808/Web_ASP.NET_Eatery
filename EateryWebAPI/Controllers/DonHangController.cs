@@ -95,7 +95,6 @@ namespace EateryWebAPI.Controllers
                 
                 dONHANG.DONHANGCHITIETs = listDHCTnew;
                 dONHANG.countSL = listDHCT.Count();
-                dONHANG.TongTien = listDHCTnew.Sum(x => x.DonGia);
                 arrNH.Add(dONHANG);
             }
 
@@ -107,17 +106,24 @@ namespace EateryWebAPI.Controllers
         [Route("api/getDonHangTheoTK")]
         public IHttpActionResult GetDonhangTheoTenTK(String TenTK)
         {
-
             DONHANG donhang = db.DONHANGs.SingleOrDefault(x => x.TenTK == TenTK && x.TrangThaiDH == 0);
             if(donhang == null)
             {
-                return Ok(new Message(0, "Lấy đơn hàng không tồn tại hoặc đang ở một trạng thái khác"));
+                return Ok(new Message(0,"Đơn hàng không tồn tại"));
             }
             String name = db.NHAHANGs.SingleOrDefault(p => p.MaNH == donhang.MaNH).TenNH;
             donhang.nameRes = name;
             donhang.NHAHANG = null;
 
             List<DONHANGCHITIET> listDHCT = db.DONHANGCHITIETs.Where(x => x.MaDHCT == donhang.MaDonHang).ToList();
+            if(listDHCT == null)
+            {
+                donhang.TongTien = 0;
+            }
+            else
+            {
+                donhang.TongTien = listDHCT.Sum(x => x.DonGia);
+            }
             List<DONHANGCHITIET> listDHCTnew = new List<DONHANGCHITIET>();
             foreach (var item2 in listDHCT)
             {
@@ -130,12 +136,10 @@ namespace EateryWebAPI.Controllers
                 dhct.DonGia = (double)(dhct.SL*ma.Gia);
                 dhct.MONAN = null;
                 listDHCTnew.Add(dhct);
-
             }
 
             donhang.DONHANGCHITIETs = listDHCTnew;
             donhang.countSL = listDHCT.Count();
-            donhang.TongTien = db.DONHANGCHITIETs.Where(x => x.MaDHCT == donhang.MaDonHang).Sum(x => x.DonGia);
             return Ok(donhang);
         }
 
@@ -202,7 +206,22 @@ namespace EateryWebAPI.Controllers
         {
 
             List<DONHANG> arr = db.DONHANGs.Where(x => x.MaNH == MaNH && x.TrangThaiDH == TrangThaiDH).ToList();
-            
+            foreach(var item in arr)
+            {
+                List<DONHANGCHITIET> arrDHCT = db.DONHANGCHITIETs.Where(x => x.MaDHCT == item.MaDonHang).ToList();
+                List<DONHANGCHITIET> _arrDHCT = new List<DONHANGCHITIET>();
+                foreach(var itemDHCT in arrDHCT)
+                {
+                    MONAN ma = db.MONANs.SingleOrDefault(x => x.MaMA == itemDHCT.MaMA);
+                    itemDHCT.TenMA = ma.TenMA;
+                    itemDHCT.giaMA = ma.Gia;
+                    itemDHCT.HinhAnhMA = ma.HinhAnh;
+                    itemDHCT.MONAN = null;
+                    _arrDHCT.Add(itemDHCT);
+                }
+                item.countSL = arrDHCT.Count();
+                item.DONHANGCHITIETs = arrDHCT;
+            }
             return Ok(arr);
         }
 
@@ -247,7 +266,23 @@ namespace EateryWebAPI.Controllers
         public IHttpActionResult LichSuNhungDonHangTrong1NgayCuaNH(int MaNH, DateTime NgayMua)
         {
             List<DONHANG> arr = db.DONHANGs.Where(x => x.MaNH == MaNH && x.NgayMua == NgayMua && x.TrangThaiDH != 0).ToList();
-            
+            foreach (var item in arr)
+            {
+                List<DONHANGCHITIET> arrDHCT = db.DONHANGCHITIETs.Where(x => x.MaDHCT == item.MaDonHang).ToList();
+                List<DONHANGCHITIET> _arrDHCT = new List<DONHANGCHITIET>();
+                foreach (var itemDHCT in arrDHCT)
+                {
+                    MONAN ma = db.MONANs.SingleOrDefault(x => x.MaMA == itemDHCT.MaMA);
+                    itemDHCT.TenMA = ma.TenMA;
+                    itemDHCT.giaMA = ma.Gia;
+                    itemDHCT.HinhAnhMA = ma.HinhAnh;
+                    itemDHCT.MONAN = null;
+                    _arrDHCT.Add(itemDHCT);
+                }
+                item.countSL = arrDHCT.Count();
+                item.DONHANGCHITIETs = arrDHCT;
+            }
+
             return Ok(arr);
         }
 
@@ -257,9 +292,7 @@ namespace EateryWebAPI.Controllers
         public IHttpActionResult GetTongTienCuaDonHang(int MaDH)
         {
             DONHANG dh = db.DONHANGs.SingleOrDefault(x=>x.MaDonHang == MaDH);
-            List<DONHANGCHITIET> listDHCT = db.DONHANGCHITIETs.Where(x => x.MaDHCT == dh.MaDonHang).ToList();
-            double TongTien = listDHCT.Sum(x => x.DonGia);
-            return Ok(TongTien);
+            return Ok(dh.TongTien);
         }
 
         //ThongKe

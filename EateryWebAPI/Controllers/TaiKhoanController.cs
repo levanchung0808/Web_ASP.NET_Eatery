@@ -35,9 +35,9 @@ namespace EateryWebAPI.Controllers
 
         [HttpGet]
         [Route("api/GetAllTaiKhoanChuaXoa")]
-        public IHttpActionResult GetAllTaiKhoanChuaXoa()
+        public IHttpActionResult GetAllTaiKhoanChuaXoa(string TenTK)
         {
-            List<TAIKHOAN> arr = db.TAIKHOANs.Where(x => x.isDelete == false).ToList();
+            List<TAIKHOAN> arr = db.TAIKHOANs.Where(x => x.isDelete == false && x.TenTK != TenTK).ToList();
             return Ok(arr);
         }
 
@@ -46,7 +46,7 @@ namespace EateryWebAPI.Controllers
         public IHttpActionResult DangNhap(string TenTK, string MatKhau)
         {
 
-            TAIKHOAN _taikhoan = db.TAIKHOANs.Where(x => x.TenTK.Equals(TenTK) && x.MatKhau.Equals(MatKhau) && x.isDelete == false).FirstOrDefault();
+            TAIKHOAN _taikhoan = db.TAIKHOANs.SingleOrDefault(x => x.TenTK.Equals(TenTK) && x.MatKhau.Equals(MatKhau) && x.isDelete == false);
             if (_taikhoan == null)
             {
                 return Ok(new Message(0, "Đăng nhập thất bại. Vui lòng kiểm tra và thử lại"));
@@ -75,6 +75,11 @@ namespace EateryWebAPI.Controllers
             if (!ModelState.IsValid)
             {
                 return Ok(new Message(0, "Thêm tài khoản thất bại"));
+            }
+            TAIKHOAN tk = db.TAIKHOANs.SingleOrDefault(x=>x.TenTK == taikhoan.TenTK);
+            if(tk != null)
+            {
+                return Ok(new Message(0, "Tài khoản đã tồn tại trong hệ thống"));
             }
 
             db.TAIKHOANs.AddOrUpdate(taikhoan);
@@ -140,7 +145,7 @@ namespace EateryWebAPI.Controllers
 
         [HttpPost]
         [Route("api/XoaTaiKhoan")]
-        public IHttpActionResult XoaTaiKhoan(string TenTK)
+        public IHttpActionResult XoaTaiKhoan(string TenTKHT, string TenTK)
         {
             TAIKHOAN _model = db.TAIKHOANs.SingleOrDefault(x => x.TenTK == TenTK);
             if (_model == null)
@@ -150,26 +155,9 @@ namespace EateryWebAPI.Controllers
             _model.isDelete = true;
             db.TAIKHOANs.AddOrUpdate(_model);
             db.SaveChanges();
-            return Ok(new Message(1, "Xoá tài khoản thành công"));
-        }
 
-        [HttpDelete]
-        [Route("api/delete-users")]
-        public IHttpActionResult XoaUsers(String id)
-        {
-            if (!ModelState.IsValid)
-            {
-                return Ok(new Message(0, "Delete Failed"));
-            }
-            TAIKHOAN _model = db.TAIKHOANs.SingleOrDefault(x => x.TenTK == id);
-            if (_model == null)
-            {
-                return Ok(new Message(0, "Delete Failed"));
-            }
-            db.TAIKHOANs.Remove(_model);
-            db.SaveChanges();
-
-            return Ok(new Message(1, "Delete Successfully"));
+            List<TAIKHOAN> arrTK = db.TAIKHOANs.Where(x=>x.isDelete == false && x.TenTK != TenTKHT).ToList();
+            return Ok(arrTK);
         }
 
         [HttpGet]

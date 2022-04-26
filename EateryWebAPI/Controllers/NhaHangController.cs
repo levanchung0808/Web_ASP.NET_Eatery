@@ -1,11 +1,15 @@
 ﻿using EateryWebAPI.Models;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Data.Entity.Migrations;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
+using System.Windows.Documents;
 
 namespace EateryWebAPI.Controllers
 {
@@ -166,17 +170,15 @@ namespace EateryWebAPI.Controllers
             _model.isDelete = true;
             db.NHAHANGs.AddOrUpdate(_model);
             db.SaveChanges();
-            return Ok(new Message(1, "Xoá nhà hàng thành công"));
+
+            List<NHAHANG> arrNH = db.NHAHANGs.Where(x=>x.isDelete == false).ToList();
+            return Ok(arrNH);
         }
 
         [HttpPost]
         [Route("api/ThemNhaHang")]
         public IHttpActionResult ThemNhaHang(NHAHANG nhahang)
         {
-            if (!ModelState.IsValid)
-            {
-                return Ok(new Message(0, "Thêm nhà hàng thất bại"));
-            }
             TAIKHOAN taikhoan = db.TAIKHOANs.SingleOrDefault(x => x.TenTK == nhahang.TenTK);
             taikhoan.VaiTro = "chunhahang";
             db.TAIKHOANs.AddOrUpdate(taikhoan);
@@ -195,7 +197,7 @@ namespace EateryWebAPI.Controllers
             }
             db.MONANs.Add(monan);
             db.SaveChanges();
-            List<MONAN> arrMA = db.MONANs.Where(x => x.MaNH == monan.MaNH).ToList();
+            List<MONAN> arrMA = db.MONANs.Where(x => x.MaNH == monan.MaNH && x.isDelete == false).ToList();
             return Ok(arrMA);
         }
 
@@ -213,48 +215,23 @@ namespace EateryWebAPI.Controllers
             ma.HinhAnh = monan.HinhAnh;
             db.MONANs.AddOrUpdate(monan);
             db.SaveChanges();
-            List<MONAN> arrMA = db.MONANs.Where(x => x.MaNH == ma.MaNH).ToList();
-            return Ok(arrMA);
-        }
-
-        [HttpPost]
-        [Route("api/XoaMonAn")]
-        public IHttpActionResult XoaMaKhuyenMai(int MaMA)
-        {
-            MONAN ma = db.MONANs.SingleOrDefault(x => x.MaMA == MaMA);
-            if (ma == null)
-            {
-                return Ok(new Message(0, "Món ăn không tồn tại"));
-            }
-            db.MONANs.Remove(ma);
-            db.SaveChanges();
-            List<MONAN> arrMA = db.MONANs.Where(x => x.MaNH == ma.MaNH).ToList();
+            List<MONAN> arrMA = db.MONANs.Where(x => x.MaNH == ma.MaNH && x.MaNH == ma.MaNH && x.isDelete == false).ToList();
             return Ok(arrMA);
         }
 
         //ThongKe
         [HttpGet]
         [Route("api/GetTongDoanhThuCuaTungMonAnTheoNH")]
-        public IHttpActionResult GetTongDoanhThuCuaTungMonAnTheoNH(int MaNH)
+        public IHttpActionResult GetTongDoanhThuCuaTungMonAnTheoNH(int MaNH, DateTime ngaybatdau, DateTime ngayketthuc)
         {
-            NHAHANG nh = db.NHAHANGs.SingleOrDefault(x => x.MaNH == MaNH);
-            List<DONHANG> arrDH = db.DONHANGs.Where(x => x.MaNH == nh.MaNH).ToList();
-            List<ThongKeModel> arrThongKe = new List<ThongKeModel>();
-            foreach (var item in arrDH){
-                List<DONHANGCHITIET> arrDHCT = db.DONHANGCHITIETs.Where(x => x.MaDHCT == item.MaDonHang).ToList();
-                foreach (var item2 in arrDHCT){
-                    MONAN ma = db.MONANs.SingleOrDefault(x => x.MaMA == item2.MaMA);
-                    ThongKeModel thongKeModel = new ThongKeModel();
-                    thongKeModel.TenMA = ma.TenMA;
-                    thongKeModel.MaMA = item2.MaMA;
-                    thongKeModel.HinnhAnhMA = ma.HinhAnh;
-                    thongKeModel.TongDoanhThu = item2.DonGia;
-                    arrThongKe.Add(thongKeModel);
-                }
-
+            using (var ctx = new EateryEntities())
+            {
+                string startDate = DateTime.Parse(ngaybatdau.ToString()).ToString("yyyy-MM-dd");
+                string endDate = DateTime.Parse(ngayketthuc.ToString()).ToString("yyyy-MM-dd");
+                var arr = ctx.Database.SqlQuery<ThongKeModel>("SELECT dhct.MaMA, ma.TenMA, ma.HinhAnh, sum(DonGia) as TongDoanhThu FROM DONHANG dh join DONHANGCHITIET dhct on dh.MaDonHang = dhct.MaDHCT join MOnAn ma on ma.MaMA = dhct.MaMA " +
+                    "Where dh.NgayMua between @ngaybatdau and @ngayketthuc and dh.MaNH = @MaNH and dh.TrangThaiDH >= 1 group by dhct.MaMA, ma.TenMA, ma.HinhAnh", new SqlParameter("@MaNH",MaNH), new SqlParameter("@ngaybatdau", ngaybatdau),new SqlParameter("@ngayketthuc", ngayketthuc)).ToList();
+                return Ok(arr);
             }
-            return Ok(arrThongKe);
-
         }
     } 
 }
